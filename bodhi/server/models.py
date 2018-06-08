@@ -2617,13 +2617,16 @@ class Update(Base):
         topic = u'update.request.%s' % action
         notifications.publish(topic=topic, msg=dict(update=self, agent=username))
 
-    def waive_test_results(self, username, comment=None):
+    def waive_test_results(self, username, comment=None, waive_tests=None):
         """
         Attempt to waive test results for this update.
 
         Args:
             username (basestring): The name of the user who is waiving the test results.
             comment (basestring): A comment from the user describing their decision.
+            waive_tests (list of basestring): A list of testcases to be waived. Defaults to ``None``
+                If left as ``None``, all ``unsatisfied_requirements`` returned by greenwave
+                will be waived, otherwise only the testcase found in both list will be waived.
         Raises:
             LockedUpdateException: If the Update is locked.
             BodhiException: If test gating is not enabled in this Bodhi instance,
@@ -2641,6 +2644,9 @@ class Update(Base):
         if self.test_gating_passed:
             raise BodhiException("Can't waive test resuts on an update that passes test gating")
 
+        # Ensure we can always iterate over waive_tests
+        waive_tests = waive_tests or []
+
         decision_context = u'bodhi_update_push_testing'
         if self.status == UpdateStatus.testing:
             decision_context = u'bodhi_update_push_stable'
@@ -2651,6 +2657,10 @@ class Update(Base):
         }
         decision = greenwave_api_post('{}/decision'.format(config.get('greenwave_api_url')), data)
         for requirement in decision['unsatisfied_requirements']:
+
+            if waive_tests and requirement['testcase'] not in waive_tests:
+                continue
+
             data = {
                 'subject': requirement['item'],
                 'testcase': requirement['testcase'],

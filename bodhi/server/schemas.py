@@ -807,3 +807,8 @@ class WaiveTestResultsSchema(CSRFProtectedSchema, colander.MappingSchema):
         colander.String(),
         missing=None,
     )
+
+    waive_tests = colander.SchemaNode(
+        colander.String(),
+        missing=None,
+    )

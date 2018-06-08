@@ -570,9 +570,10 @@ def waive_test_results(request):
     """
     update = request.validated['update']
     comment = request.validated.pop('comment', None)
+    waive_tests = request.validated.pop('waive_tests', None)
 
     try:
-        update.waive_test_results(request.user.name, comment)
+        update.waive_test_results(request.user.name, comment, waive_tests)
     except LockedUpdateException as e:
         request.errors.add('body', 'request', str(e))
     except BodhiException as e:
